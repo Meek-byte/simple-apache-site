@@ -1,0 +1,45 @@
+name: Deploy Apache Site
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+env:
+  DEPLOY_PATH: /var/www/html
+  APACHE_USER: www-data
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Apache
+        run: |
+          set -e
+          sudo apt update
+          sudo apt install apache2 -y
+          echo "✅ Apache installed"
+
+      - name: Copy site files
+        run: |
+          set -e
+          sudo cp -r ./public-html/* ${{ env.DEPLOY_PATH }}/
+          sudo chown -R ${{ env.APACHE_USER }}:${{ env.APACHE_USER }} ${{ env.DEPLOY_PATH }}/
+          sudo chmod -R 755 ${{ env.DEPLOY_PATH }}/
+          echo "✅ Files deployed"
+
+      - name: Start Apache
+        run: |
+          sudo systemctl start apache2
+          sudo systemctl enable apache2
+          echo "✅ Apache started"
+
+      - name: Verify deployment
+        run: |
+          sudo apache2ctl -t
+          sudo systemctl status apache2
+          echo "✅ Deployment verified"
